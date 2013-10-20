@@ -48,7 +48,7 @@ def request_blobs_from_apple(manifest):
 	return r.text
 
 def request_blobs_from_cydia(manifest):
-	url = 'http://gs.apple.com/TSS/controller?action=2'
+	url = 'http://cydia.saurik.com/TSS/controller?action=2'
 	headers = {'User-Agent': 'savethemblobs'}
 	r = requests.post(url, headers=headers, data=manifest)
 	return r.text
