@@ -9,7 +9,9 @@ Will automatically work with future firmwares!
 ## Usage
 
 	savethemblobs.py [-h] [--save-dir SAVE_DIR] [--overwrite]
-	                 [--no-submit-cydia] [--skip-cydia] [--skip-ifaith]
+	                 [--overwrite-apple] [--overwrite-cydia]
+	                 [--overwrite-ifaith] [--no-submit-cydia]
+	                 [--skip-cydia] [--skip-ifaith]
 	                 ecid device
 
 	positional arguments:
@@ -18,8 +20,11 @@ Will automatically work with future firmwares!
 
 	optional arguments:
 	  -h, --help           show this help message and exit
-	  --save-dir SAVE_DIR  local dir for saving blobs (default: $HOME/.shsh)
+	  --save-dir SAVE_DIR  local dir for saving blobs (default: ~/.shsh)
 	  --overwrite          overwrite any existing blobs
+	  --overwrite-apple    overwrite any existing blobs (only from Apple)
+	  --overwrite-cydia    overwrite any existing blobs (only from Cydia)
+	  --overwrite-ifaith   overwrite any existing blobs (only from iFaith)
 	  --no-submit-cydia    don't submit blobs to Cydia server
 	  --skip-cydia         skip fetching blobs from Cydia server
 	  --skip-ifaith        skip fetching blobs from iFaith server
