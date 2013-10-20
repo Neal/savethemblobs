@@ -16,53 +16,55 @@ import sys, os, argparse
 import requests
 import json
 
+USER_AGENT = 'savethemblobs'
+IACQUA_USER_AGENT = 'iacqua-1.5-941'
 
 def firmwares_being_signed(device):
 	url = 'http://api.ineal.me/tss/%s' % (device)
-	headers = {'User-Agent': 'savethemblobs'}
+	headers = {'User-Agent': USER_AGENT}
 	r = requests.get(url, headers=headers)
 	return r.text
 
 def tss_request_manifest(board, build, ecid):
 	url = 'http://api.ineal.me/tss/manifest/%s/%s' % (board, build)
-	headers = {'User-Agent': 'savethemblobs'}
+	headers = {'User-Agent': USER_AGENT}
 	r = requests.get(url, headers=headers)
 	manifest = r.text.replace('<string>$ECID$</string>', '<integer>%s</integer>' % (ecid))
 	return manifest
 
 def available_blobs_on_cydia(ecid):
 	url = 'http://cydia.saurik.com/tss@home/api/check/%s' % (ecid)
-	headers = {'User-Agent': 'savethemblobs'}
+	headers = {'User-Agent': USER_AGENT}
 	r = requests.get(url, headers=headers)
 	return r.text
 
 def available_blobs_on_ifaith(ecid, board):
 	url = 'http://iacqua.ih8sn0w.com/submit.php?ecid=%s&board=%s' % ("{0:0{1}X}".format(int(ecid), 16), board)
-	headers = {'User-Agent': 'iacqua-1.5-941'}
+	headers = {'User-Agent': IACQUA_USER_AGENT}
 	r = requests.get(url, headers=headers)
 	return r.text
 
 def request_blobs_from_apple(manifest):
 	url = 'http://gs.apple.com/TSS/controller?action=2'
-	headers = {'User-Agent': 'savethemblobs'}
+	headers = {'User-Agent': USER_AGENT}
 	r = requests.post(url, headers=headers, data=manifest)
 	return r.text
 
 def request_blobs_from_cydia(manifest):
 	url = 'http://cydia.saurik.com/TSS/controller?action=2'
-	headers = {'User-Agent': 'savethemblobs'}
+	headers = {'User-Agent': USER_AGENT}
 	r = requests.post(url, headers=headers, data=manifest)
 	return r.text
 
 def request_blobs_from_ifaith(ecid, board, ios):
 	url = 'http://iacqua.ih8sn0w.com/submit.php?ecid=%s&board=%s&ios=%s' % ("{0:0{1}X}".format(int(ecid), 16), board, ios)
-	headers = {'User-Agent': 'iacqua-1.5-941'}
+	headers = {'User-Agent': IACQUA_USER_AGENT}
 	r = requests.get(url, headers=headers)
 	return r.text
 
 def submit_blobs_to_cydia(cpid, bdid, ecid, data):
 	url = 'http://cydia.saurik.com/tss@home/api/store/%s/%s/%s' % (cpid, bdid, ecid)
-	headers = {'User-Agent': 'savethemblobs'}
+	headers = {'User-Agent': USER_AGENT}
 	requests.post(url, headers=headers, data=data)
 
 def write_to_file(file_path, data):
@@ -89,7 +91,6 @@ def main(argv):
 	args = parse_args()
 
 	ecid = int(args.ecid, 0)
-	firmwares_apple_is_signing = []
 
 	if not os.path.exists(args.save_dir):
 		os.makedirs(args.save_dir)
@@ -101,66 +102,71 @@ def main(argv):
 		model = device_info['model']
 		cpid = device_info['cpid']
 		bdid = device_info['bdid']
-		for firmware in device_info['firmwares']:
-			firmwares_apple_is_signing.append({ 'build': firmware['build'], 'version': firmware['version'] })
+		for f in device_info['firmwares']:
+			save_path = os.path.join(args.save_dir, '%s_%s_%s-%s.shsh' % (ecid, model, f['version'], f['build']))
 
-	for f in firmwares_apple_is_signing:
-		save_path = os.path.join(args.save_dir, '%s_%s_%s-%s.shsh' % (ecid, model, f['version'], f['build']))
+			if not os.path.exists(save_path) or args.overwrite_apple or args.overwrite:
+				print 'Grabbing TSS request manifest for firmware build %s' % (f['build'])
+				manifest = tss_request_manifest(board, f['build'], ecid)
 
-		if not os.path.exists(save_path) or args.overwrite_apple or args.overwrite:
-			print 'Grabbing TSS request manifest for firmware build %s' % (f['build'])
-			manifest = tss_request_manifest(board, f['build'], ecid)
-
-			print 'Requesting blobs from Apple'
-			blobs = request_blobs_from_apple(manifest).replace('STATUS=0&MESSAGE=SUCCESS&REQUEST_STRING=', '')
-
-			print 'Saving blobs to %s' % (save_path)
-			write_to_file(save_path, blobs)
-
-			if not args.no_submit_cydia:
-				print 'Submitting blobs to Cydia server'
-				submit_blobs_to_cydia(cpid, bdid, ecid, blobs)
-
-		else:
-			print 'Skipping build %s; blobs already exist at %s' % (f['build'], save_path)
-
-	if not args.skip_cydia:
-		print 'Fetching blobs available on Cydia server'
-		blobs_available_on_cydia = json.loads(available_blobs_on_cydia(ecid))
-		for b in blobs_available_on_cydia:
-			save_path = os.path.join(args.save_dir, '%s_%s_%s-%s.shsh' % (ecid, b['model'], b['firmware'], b['build']))
-
-			if not os.path.exists(save_path) or args.overwrite_cydia or args.overwrite:
-				print 'Grabbing TSS request manifest for firmware build %s' % (b['build'])
-				manifest = tss_request_manifest(board, b['build'], ecid)
-
-				print 'Requesting blobs from Cydia'
-				blobs = request_blobs_from_cydia(manifest).replace('STATUS=0&MESSAGE=SUCCESS&REQUEST_STRING=', '')
+				print 'Requesting blobs from Apple'
+				blobs = request_blobs_from_apple(manifest).replace('STATUS=0&MESSAGE=SUCCESS&REQUEST_STRING=', '')
 
 				print 'Saving blobs to %s' % (save_path)
 				write_to_file(save_path, blobs)
 
+				if not args.no_submit_cydia:
+					print 'Submitting blobs to Cydia server'
+					submit_blobs_to_cydia(cpid, bdid, ecid, blobs)
+
 			else:
-				print 'Skipping build %s; blobs already exist at %s' % (b['build'], save_path)
+				print 'Skipping build %s; blobs already exist at %s' % (f['build'], save_path)
 
-	if not args.skip_ifaith:
-		print 'Fetching blobs available on iFaith server'
-		blobs_available_on_ifaith = available_blobs_on_ifaith(ecid, board)
-		for b in blobs_available_on_ifaith.split('.shsh'):
-			if b:
-				ios = b.split(' ')[0]
-				bld = b.split(' ')[1].replace('(', '').replace(')', '')
-				save_path = os.path.join(args.save_dir, '%s_%s_%s-%s.ifaith' % (ecid, model, ios, bld))
+	if not args.skip_cydia:
+		print 'Fetching blobs available on Cydia server'
+		blobs_available_on_cydia = json.loads(available_blobs_on_cydia(ecid))
+		if blobs_available_on_cydia:
+			for b in blobs_available_on_cydia:
+				save_path = os.path.join(args.save_dir, '%s_%s_%s-%s.shsh' % (ecid, b['model'], b['firmware'], b['build']))
 
-				if not os.path.exists(save_path) or args.overwrite_ifaith or args.overwrite:
-					print 'Requesting blobs from iAcqua'
-					blobs = request_blobs_from_ifaith(ecid, board, b)
+				if not os.path.exists(save_path) or args.overwrite_cydia or args.overwrite:
+					print 'Grabbing TSS request manifest for firmware build %s' % (b['build'])
+					manifest = tss_request_manifest(board, b['build'], ecid)
+
+					print 'Requesting blobs from Cydia'
+					blobs = request_blobs_from_cydia(manifest).replace('STATUS=0&MESSAGE=SUCCESS&REQUEST_STRING=', '')
 
 					print 'Saving blobs to %s' % (save_path)
 					write_to_file(save_path, blobs)
 
 				else:
-					print 'Skipping build %s; blobs already exist at %s' % (bld, save_path)
+					print 'Skipping build %s; blobs already exist at %s' % (b['build'], save_path)
+
+		else:
+			print 'No blobs found on Cydia server'
+
+	if not args.skip_ifaith:
+		print 'Fetching blobs available on iFaith server'
+		blobs_available_on_ifaith = available_blobs_on_ifaith(ecid, board)
+		if '.shsh' in blobs_available_on_ifaith:
+			for b in blobs_available_on_ifaith.split('.shsh'):
+				if b:
+					ios = b.split(' ')[0]
+					bld = b.split(' ')[1].replace('(', '').replace(')', '')
+					save_path = os.path.join(args.save_dir, '%s_%s_%s-%s.ifaith' % (ecid, model, ios, bld))
+
+					if not os.path.exists(save_path) or args.overwrite_ifaith or args.overwrite:
+						print 'Requesting blobs from iAcqua'
+						blobs = request_blobs_from_ifaith(ecid, board, b)
+
+						print 'Saving blobs to %s' % (save_path)
+						write_to_file(save_path, blobs)
+
+					else:
+						print 'Skipping build %s; blobs already exist at %s' % (bld, save_path)
+
+		else:
+			print 'No blobs found on iFaith server'
 
 
 if __name__ == '__main__':
