@@ -62,8 +62,7 @@ def request_blobs_from_ifaith(ecid, board, ios):
 def submit_blobs_to_cydia(cpid, bdid, ecid, data):
 	url = 'http://cydia.saurik.com/tss@home/api/store/%s/%s/%s' % (cpid, bdid, ecid)
 	headers = {'User-Agent': 'savethemblobs'}
-	r = requests.post(url, headers=headers, data=data)
-	return r.text
+	requests.post(url, headers=headers, data=data)
 
 
 def main(argv):
