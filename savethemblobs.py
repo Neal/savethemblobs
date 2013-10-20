@@ -129,7 +129,7 @@ def main(argv):
 		print 'Fetching blobs available on Cydia server'
 		blobs_available_on_cydia = json.loads(available_blobs_on_cydia(ecid))
 		for b in blobs_available_on_cydia:
-			save_path = os.path.join(save_dir, '%s_%s_%s-%s.shsh' % (ecid, model, b['firmware'], b['build']))
+			save_path = os.path.join(save_dir, '%s_%s_%s-%s.shsh' % (ecid, b['model'], b['firmware'], b['build']))
 
 			if not os.path.exists(save_path) or overwrite:
 				print 'Grabbing TSS request manifest for firmware build %s' % (b['build'])
