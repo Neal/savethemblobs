@@ -42,7 +42,7 @@ def available_blobs_on_cydia(ecid):
 	return r.text
 
 def available_blobs_on_ifaith(ecid, board):
-	url = 'http://iacqua.ih8sn0w.com/submit.php?ecid=%s&board=%s' % ("{0:0{1}X}".format(int(ecid), 16), board)
+	url = 'http://iacqua.ih8sn0w.com/submit.php?ecid=%.16X&board=%s' % (ecid, board)
 	r = requests.get(url, headers={'User-Agent': 'iacqua-1.5-941'})
 	return r.text
 
@@ -61,7 +61,7 @@ def request_blobs_from_cydia(board, build, ecid, cpid=None, bdid=None):
 	return parse_tss_response(r.text)
 
 def request_blobs_from_ifaith(board, build, ecid):
-	url = 'http://iacqua.ih8sn0w.com/submit.php?ecid=%s&board=%s&ios=%s' % ("{0:0{1}X}".format(int(ecid), 16), board, build)
+	url = 'http://iacqua.ih8sn0w.com/submit.php?ecid=%.16X&board=%s&ios=%s' % (ecid, board, build)
 	r = requests.get(url, headers={'User-Agent': 'iacqua-1.5-941'})
 	if not r.status_code == requests.codes.ok:
 		return None
