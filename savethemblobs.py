@@ -48,13 +48,13 @@ def request_blobs_from_apple(manifest):
 	url = 'http://gs.apple.com/TSS/controller?action=2'
 	headers = {'User-Agent': USER_AGENT}
 	r = requests.post(url, headers=headers, data=manifest)
-	return r.text
+	return parse_tss_response(r.text)
 
 def request_blobs_from_cydia(manifest):
 	url = 'http://cydia.saurik.com/TSS/controller?action=2'
 	headers = {'User-Agent': USER_AGENT}
 	r = requests.post(url, headers=headers, data=manifest)
-	return r.text
+	return parse_tss_response(r.text)
 
 def request_blobs_from_ifaith(ecid, board, ios):
 	url = 'http://iacqua.ih8sn0w.com/submit.php?ecid=%s&board=%s&ios=%s' % ("{0:0{1}X}".format(int(ecid), 16), board, ios)
@@ -71,6 +71,13 @@ def write_to_file(file_path, data):
 	f = open(file_path, 'w')
 	f.write(data)
 	f.close()
+
+def parse_tss_response(response):
+	ret = {}
+	for v in response.split('&'):
+		r = v.split('=',1)
+		ret[r[0]] = r[1]
+	return ret
 
 def parse_args():
 	parser = argparse.ArgumentParser()
@@ -110,14 +117,18 @@ def main(argv):
 				manifest = tss_request_manifest(board, f['build'], ecid)
 
 				print 'Requesting blobs from Apple'
-				blobs = request_blobs_from_apple(manifest).replace('STATUS=0&MESSAGE=SUCCESS&REQUEST_STRING=', '')
+				r = request_blobs_from_apple(manifest)
 
-				print 'Saving blobs to %s' % (save_path)
-				write_to_file(save_path, blobs)
+				if r['MESSAGE'] == 'SUCCESS':
+					print 'Saving blobs to %s' % (save_path)
+					write_to_file(save_path, r['REQUEST_STRING'])
 
-				if not args.no_submit_cydia:
-					print 'Submitting blobs to Cydia server'
-					submit_blobs_to_cydia(cpid, bdid, ecid, blobs)
+					if not args.no_submit_cydia:
+						print 'Submitting blobs to Cydia server'
+						submit_blobs_to_cydia(cpid, bdid, ecid, r['REQUEST_STRING'])
+
+				else:
+					print 'Error receiving blobs: %s [%s]' % (r['MESSAGE'], r['STATUS'])
 
 			else:
 				print 'Skipping build %s; blobs already exist at %s' % (f['build'], save_path)
@@ -134,10 +145,14 @@ def main(argv):
 					manifest = tss_request_manifest(board, b['build'], ecid)
 
 					print 'Requesting blobs from Cydia'
-					blobs = request_blobs_from_cydia(manifest).replace('STATUS=0&MESSAGE=SUCCESS&REQUEST_STRING=', '')
+					r = request_blobs_from_cydia(manifest)
 
-					print 'Saving blobs to %s' % (save_path)
-					write_to_file(save_path, blobs)
+					if r['MESSAGE'] == 'SUCCESS':
+						print 'Saving blobs to %s' % (save_path)
+						write_to_file(save_path, r['REQUEST_STRING'])
+
+					else:
+						print 'Error receiving blobs: %s [%s]' % (r['MESSAGE'], r['STATUS'])
 
 				else:
 					print 'Skipping build %s; blobs already exist at %s' % (b['build'], save_path)
