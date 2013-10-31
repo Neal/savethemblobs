@@ -106,13 +106,16 @@ def main():
 		os.makedirs(args.save_dir)
 
 	print 'Fetching firmwares Apple is currently signing for %s' % (args.device)
-	devices = json.loads(firmwares_being_signed(args.device))
-	for device_info in devices.itervalues():
-		board = device_info['board']
-		model = device_info['model']
-		cpid = device_info['cpid']
-		bdid = device_info['bdid']
-		for f in device_info['firmwares']:
+	d = firmwares_being_signed(args.device)
+	if not d:
+		print 'ERROR: No firmwares found! Invalid device.'
+		return 1
+	for device in json.loads(d).itervalues():
+		board = device['board']
+		model = device['model']
+		cpid = device['cpid']
+		bdid = device['bdid']
+		for f in device['firmwares']:
 			save_path = os.path.join(args.save_dir, '%s_%s_%s-%s.shsh' % (ecid, model, f['version'], f['build']))
 
 			if not os.path.exists(save_path) or args.overwrite_apple or args.overwrite:
