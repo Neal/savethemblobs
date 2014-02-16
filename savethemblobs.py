@@ -10,7 +10,7 @@
 #   savethemblobs.py 1050808663311 iPhone3,1
 #   savethemblobs.py 0x000000F4A913BD0F iPhone3,1 --overwrite
 #   savethemblobs.py 1050808663311 n90ap --skip-cydia --skip-ifaith
-#
+
 import sys, os, argparse
 import requests
 import json
@@ -20,7 +20,7 @@ __version__ = '1.0'
 USER_AGENT = 'savethemblobs/%s' % __version__
 
 def firmwares_being_signed(device):
-	url = 'http://api.ineal.me/tss/%s' % (device)
+	url = 'http://api.ineal.me/tss/%s/includebeta' % (device)
 	r = requests.get(url, headers={'User-Agent': USER_AGENT})
 	return r.text
 
