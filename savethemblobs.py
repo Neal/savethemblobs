@@ -98,8 +98,13 @@ def parse_args():
 	parser.add_argument('--skip-ifaith', help='skip fetching blobs from iFaith server', action='store_true')
 	return parser.parse_args()
 
-def main():
-	args = parse_args()
+def main(passedArgs = None):
+
+	if passedArgs:
+		args = passedArgs
+	else:
+		args = parse_args()
+
 	ecid = int(args.ecid, 0)
 
 	if not os.path.exists(args.save_dir):
